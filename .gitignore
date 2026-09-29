@@ -1,0 +1,18 @@
+# 签名密钥（绝不入库）
+apk-build/keys/
+*.jks
+
+# 构建中间产物
+apk-build/build/
+
+# 构建工具包（本地环境）
+apk-build/.buildtools/
+
+# 备份 / 临时文件
+*.bak
+*.idsig
+*.tmp
+.DS_Store
+
+# 设计套件内部工作文件
+.design-suite/
