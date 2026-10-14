@@ -104,10 +104,23 @@
   /* ---------- 起卦屏 ---------- */
   function renderCast() {
     var html = '';
-    html += '<div class="hero">' +
+    var heroHtml = '<div class="hero">' +
       '<img src="data:image/jpeg;base64,__HERO__" alt="月下梅枝水墨插画" data-design-suite-media-slot="hero-ink-art">' +
       '<div class="hero-cap"><div class="t1">梅花易数·全息占</div><div class="t2">观象知机 · 明理趋吉</div></div>' +
       '</div>';
+    html += heroHtml;
+
+    // 水墨源流序言（v2.0.0：伏羲画卦 → 文王演易 → 孔子十翼 → 梅花易数观梅 → 本 App 承脉）
+    html += '<div class="yb-slip">' +
+      '<div class="yb-title">易之源流 · 观梅承脉</div>' +
+      '<div class="yb-lines">' +
+      SAN_YUANLIU.lines.map(function (ln, li) {
+        return '<div class="yb-line"><div class="yb-t">' + ['一', '二', '三', '四'][li] + '</div><div class="yb-d">' + esc(ln) + '</div></div>';
+      }).join('<div class="yb-flow">↓</div>') +
+      '</div>' +
+      '<div class="yb-sig">——' + esc(SAN_YUANLIU.title) + '</div>' +
+      '</div>';
+
     html += '<div style="padding:0 20px 26px">';
     html += '<div class="method-tabs">' +
       '<div class="method-tab' + (store.method === 'time' ? ' on' : '') + '" data-action="method" data-m="time">时间起卦</div>' +
@@ -299,50 +312,51 @@
   }
 
   /* ---------- 三元九维 · 19683 计算层 ---------- */
-  // 起卦联动映射：天地人取上卦三爻、正反合取下卦三爻（阴-1/阳+1/动爻0），
-  // 归/守/进 由动爻位置、体用关系、月令旺衰综合判定
+  // 先天八卦数 → 后天洛书宫位（SAN_DIMS 索引）：乾六5 兑七6 离九8 震三2 巽四3 坎一0 艮八7 坤二1
+  var GUA_TO_PALACE = { 1: 5, 2: 6, 3: 8, 4: 2, 5: 3, 6: 0, 7: 7, 8: 1 };
+  // 阳卦：乾震坎艮（一阳为主/纯阳）；阴卦：坤巽离兑
+  var YANG_TRIGRAMS = [1, 4, 6, 7];
+
+  // 九宫宫气映射（v2.0.0 洛书九宫观照）：
+  // 1) 基础宫气：九宫各按自身五行 × 农历月令旺衰 → 旺相 +1 / 休 0 / 囚死 -1
+  // 2) 体卦落宫主「我」：体卦旺相则其宫气旺、囚死则弱（与宫五行旺衰一致，显体之实）
+  // 3) 用卦（动爻所在卦）落宫转枢为 0：事在变动未定
+  // 4) 变卦化机：变上卦落宫显「事将往」气进 +1；变下卦落宫显「事将收」气敛 -1（不与体用宫冲突时）
+  // 保留三进制编码：-1→0, 0→1, +1→2；坎一为最高位；中心态 9841；偏移 = Σ|v|
   function sanYuanFromCast(r) {
-    var b = r.benLines;      // [初..上] 0阴1阳
-    var dl = r.dongLine;     // 1..6 或 0（无动）
-    function yaoVal(idx) {   // 爻位 idx 0..5
-      if (dl > 0 && idx === dl - 1) return 0; // 动爻 = 转化中
-      return b[idx] === 1 ? 1 : -1;
+    var lm = store.lunarMonth || 0;
+    var v = new Array(9);
+    for (var i = 0; i < 9; i += 1) {
+      var stage = lm ? getWangShuai(SAN_DIMS[i].xing, lm) : '平';
+      v[i] = (stage === '旺' || stage === '相') ? 1 : (stage === '囚' || stage === '死') ? -1 : 0;
     }
-    var v = [];
-    v.push(yaoVal(3)); // 天-概念 ← 四爻
-    v.push(yaoVal(4)); // 地-实践 ← 五爻
-    v.push(yaoVal(5)); // 人-关系 ← 上爻
-    v.push(yaoVal(0)); // 正-前进 ← 初爻
-    v.push(yaoVal(1)); // 反-批判 ← 二爻
-    v.push(yaoVal(2)); // 合-综合 ← 三爻
-    // 归-回归：动爻在上（4~6）→ +1；无动爻 → 0；动爻在下（1~3）→ -1
-    v.push(dl === 0 ? 0 : (dl >= 4 ? 1 : -1));
-    // 守-持守：比和/用生体 → +1（有守之资）；体克用 → 0；体生用/用克体 → -1
-    var rel = r.tiYongRelation;
-    v.push((rel === '比和' || rel === '用生体') ? 1 : (rel === '体克用' ? 0 : -1));
-    // 进-进取：有动爻且体卦旺相 → +1；有动爻但体衰 → 0；无动爻（静卦）→ -1
-    var ws = getWangShuai(r.tiXing, store.lunarMonth);
-    if (dl === 0) v.push(-1);
-    else if (ws === '旺' || ws === '相') v.push(1);
-    else v.push(0);
+    var tiP = GUA_TO_PALACE[r.ti] != null ? GUA_TO_PALACE[r.ti] : 4;
+    var yongP = GUA_TO_PALACE[r.yong] != null ? GUA_TO_PALACE[r.yong] : 4;
+    var wsT = lm ? getWangShuai(r.tiXing, lm) : '平';
+    v[tiP] = (wsT === '旺' || wsT === '相') ? 1 : (wsT === '囚' || wsT === '死') ? -1 : 0;
+    v[yongP] = 0; // 用卦即动爻所在之卦：事转枢
+    var bUp = GUA_TO_PALACE[r.bian.upper];
+    var bLo = GUA_TO_PALACE[r.bian.lower];
+    if (bUp != null && bUp !== tiP && bUp !== yongP) v[bUp] = 1;
+    if (bLo != null && bLo !== tiP && bLo !== yongP) v[bLo] = -1;
     return v;
   }
 
-  // 三进制编码：-1→0, 0→1, +1→2；天为最高位 MSB
+  // 三进制编码：-1→0, 0→1, +1→2；坎一为最高位 MSB
   function sanIndex(v) {
     var idx = 0;
     for (var i = 0; i < 9; i += 1) idx = idx * 3 + (v[i] + 1);
     return idx; // 0..19682
   }
 
-  // 认知偏移：Σ|v|，0..9（0=完全转化悬置，9=全维确定）
+  // 宫气凝聚度（偏宫程度）：Σ|v|，0..9（0=九宫俱枢，9=九宫俱动）
   function sanOffset(v) {
     var s = 0;
     for (var i = 0; i < 9; i += 1) s += Math.abs(v[i]);
     return s;
   }
 
-  // 27 卦粗粒度模式：体/用/变 分别取三组主分量（多数票）
+  // 27 格局粗粒度模式：体/用/变 各取三宫多数票（体=坎坤震，用=巽中乾，变=兑艮离）
   function sanMode27(v) {
     function maj(a, b, c) {
       var s = (a > 0 ? 1 : a < 0 ? -1 : 0) + (b > 0 ? 1 : b < 0 ? -1 : 0) + (c > 0 ? 1 : c < 0 ? -1 : 0);
@@ -351,30 +365,32 @@
     return [maj(v[0], v[1], v[2]), maj(v[3], v[4], v[5]), maj(v[6], v[7], v[8])];
   }
 
-  // 四象极限环归属：与四个原型向量的欧氏距离最小者
-  function sanPhaseIdx(v) {
-    var best = 0, bd = Infinity, bh = -1;
-    for (var i = 0; i < SAN_PHASES.length; i += 1) {
-      var p = SAN_PHASES[i].proto, d = 0, h = 0;
-      for (var j = 0; j < 9; j += 1) {
-        var df = v[j] - p[j];
-        d += df * df;
-        if (v[j] !== 0 && v[j] === p[j]) h += 1; // 同号命中：距离并列时取语义重合度更高者
-      }
-      if (d < bd || (d === bd && h > bh)) { bd = d; bh = h; best = i; }
-    }
-    return best;
+  // 伏羲四象相位：体用两卦阴阳相合（阳卦乾震坎艮，阴卦坤巽离兑）
+  // 太阳=体阳用阳 / 少阴=体阳用阴 / 少阳=体阴用阳 / 太阴=体阴用阴
+  function sanPhaseFromCast(r) {
+    if (!r) return -1;
+    var tiYang = YANG_TRIGRAMS.indexOf(r.ti) >= 0;
+    var yongYang = YANG_TRIGRAMS.indexOf(r.yong) >= 0;
+    if (tiYang && yongYang) return 0;      // 太阳
+    if (tiYang && !yongYang) return 1;     // 少阴
+    if (!tiYang && yongYang) return 2;     // 少阳
+    return 3;                              // 太阴
+  }
+  function sanPhDesc(phIdx) {
+    return phIdx >= 0 && phIdx < SAN_PHASES.length ? SAN_PHASES[phIdx].desc : '未起卦，相位未定；起卦后以体用两卦阴阳合四象。';
   }
 
   // 三元九维整体白话语（动态综述）
-  function sanSummary(v, mode, ph) {
+  function sanSummary(v, mode, phIdx) {
     var m = SAN_MODE_27[sanModeKey(mode)];
+    var ph = phIdx >= 0 ? SAN_PHASES[phIdx] : null;
+    var off = sanOffset(v);
     var s = '';
-    if (sanOffset(v) === 0) {
-      s = '九维俱归于零——此是「转化中」的中心态：旧结构已瓦解，新结构正在形成。宜静观内在重组，暂缓对外发力，待气机重新凝聚后再行进取。';
+    if (off === 0) {
+      s = '九宫俱枢——此是「转化中」的中心态（第 9841 号）：宫气未聚、事未成形。宜静观宫气流转，暂缓发力，待气机凝聚后再行。';
     } else {
-      s = '观此九维之象，' + (m ? m.idea : '') + ' 就相位而言，' + ph.desc;
-      s += ' 全维「认知偏移」为 ' + sanOffset(v) + ' 分（满分 9）：' + (sanOffset(v) >= 6 ? '确定度高，认知较为笃定，宜顺势而行。' : sanOffset(v) >= 3 ? '确定度中平，宜审时而动、留转圜余地。' : '确定度低，多处于转化与悬置，宜静观自省、蓄力待时。');
+      s = '观此九宫宫气之象，' + (m ? m.idea : '') + ' 就四象相位而言，' + (ph ? ph.desc : '未起卦，相位未定。');
+      s += ' 全「宫气凝聚度」为 ' + off + ' 分（满分 9）：' + (off >= 6 ? '宫气凝聚、格局笃定，宜顺势而行。' : off >= 3 ? '宫气聚散中平，宜审时而动、留转圜余地。' : '宫气多枢散、事未成局，宜静观自省、蓄力待时。');
     }
     return s;
   }
@@ -385,7 +401,17 @@
     return v.map(function (x) { return x === -1 ? 0 : x === 1 ? 2 : 1; }).join('');
   }
 
-  // 三段断语合成·短句版（联动段）：体用基准 × 27模式短句 × 相位时机
+  // 镜像卦短断（第五段）：当前卦的对偶提示
+  function mirrorShort(r) {
+    if (!r) return '';
+    var m = mirrorOf(r.ben.seq);
+    if (!m) return '';
+    var other = HEXAGRAMS[String(m.seq)];
+    var otherName = other ? other.name : '';
+    return '镜像「' + otherName + '」（' + m.type + '对）：' + m.tip;
+  }
+
+  // 断语合成·短句版（联动段）：体用基准 × 27格局短句 × 四象时机 × 镜像短断
   function sanReadingShort(r, mode, mKey, phIdx) {
     var parts = [];
     if (r && r.tiYongRelation && SAN_TIYONG_DUAN[r.tiYongRelation]) {
@@ -393,10 +419,12 @@
     }
     if (SAN_MODE_SHORT[mKey]) parts.push(SAN_MODE_SHORT[mKey]);
     if (phIdx >= 0 && SAN_PHASE_ACT[phIdx]) parts.push(SAN_PHASE_ACT[phIdx]);
+    var mir = mirrorShort(r);
+    if (mir) parts.push(mir);
     if (!parts.length) return '';
     return parts.join('；') + '。';
   }
-  // 三段断语合成·完整版（合参卡）：短句版 + 偏移把握
+  // 断语合成·完整版（合参卡）：短句版 + 偏移把握
   function sanReadingFull(r, mode, mKey, phIdx, off) {
     var s = sanReadingShort(r, mode, mKey, phIdx);
     if (s && off >= 0) s = s.slice(0, -1) + '；' + sanOffsetAct(off) + '。';
@@ -708,24 +736,40 @@ function miniGua(tag, name, full, lines, dongSet) {
     html += '<div class="card about-card"><h4>明示</h4><p>' + esc(ABOUT_DATA.disclaimer) + '</p></div>';
     html += '<div class="card about-card"><h4>协助创作</h4><p>' + esc(ABOUT_DATA.credit) + '</p></div>';
     html += '<div class="card about-card"><h4>体系来源</h4><p>' + esc(SAN_CREDIT) + '</p></div>';
-    html += '<div class="ver-line">版本 1.3.0 · 安卓原型</div>';
+    html += '<div class="ver-line">版本 2.0.0 · 安卓原型</div>';
     html += '</div>';
     return html;
   }
 
-  /* ---------- 三元九维 · 19683 ---------- */
-  // 九宫格单格：维度 + 三态循环
-  function sanCellHtml(v, idx) {
+  /* ---------- 三元九维 · 洛书九宫 19683 ---------- */
+  // 洛书飞星格位：grid-area 行/列（巽四离九坤二 / 震三中五兑七 / 艮八坎一乾六）
+  var PALACE_AREA = [
+    '3 / 2', // 坎一 下中
+    '1 / 3', // 坤二 右上
+    '2 / 1', // 震三 左中
+    '1 / 1', // 巽四 左上
+    '2 / 2', // 中五 正中
+    '3 / 3', // 乾六 右下
+    '2 / 3', // 兑七 右中
+    '3 / 1', // 艮八 左下
+    '1 / 2'  // 离九 上中
+  ];
+  // 九宫盘单格：宫名 + 方位卦 + 三态循环 + 河图生成数 + 旺衰量化分
+  function sanPalaceCell(v, idx) {
     var d = SAN_DIMS[idx];
     var val = v[idx];
     var cls = val === 1 ? ' sy-vp' : val === -1 ? ' sy-vn' : ' sy-vz';
-    var keyWord = { 1: '进', 0: '转', '-1': '止' }['' + val];
+    var keyWord = { 1: '行', 0: '转', '-1': '止' }['' + val];
     var desk = SAN_VALUE_TEXT['' + val];
-    return '<div class="sy-cell' + cls + '" data-action="san-cycle" data-d="' + idx + '">' +
-      '<div class="sy-dn"><b>' + d.name + '</b> · ' + d.key + '</div>' +
+    var stage = store.lunarMonth ? getWangShuai(d.xing, store.lunarMonth) : '平';
+    var score = heTuScore ? heTuScore(d.xing, stage) : '';
+    var area = PALACE_AREA[idx];
+    return '<div class="sy-cell' + cls + '" data-action="san-cycle" data-d="' + idx + '" style="grid-area:' + area + '">' +
+      '<div class="sy-dn"><b>' + d.name + '</b> · ' + d.key + ' · ' + d.gua + '</div>' +
       '<div class="sy-dv">' + val + '</div>' +
       '<div class="sy-dk">' + keyWord + '</div>' +
       '<div class="sy-ds">' + d.desc + '</div>' +
+      (score !== '' ? '<div class="sy-dh">河图 ' + d.sheng + '/' + d.cheng + ' · ' + stage + ' ' + score + '</div>' : '') +
       '<div class="sy-dt">' + desk + '</div>' +
       '</div>';
   }
@@ -734,7 +778,7 @@ function miniGua(tag, name, full, lines, dongSet) {
   function renderSan() {
     var h = '';
     h += '<div style="padding:0 20px 26px">';
-    h += '<div class="page-title"><div class="seal">维</div><div><h2>三元九维 · 认知观照</h2><div class="sub">九维三态 · 3⁹ = 19683 状态空间</div></div></div>';
+    h += '<div class="page-title"><div class="seal">宫</div><div><h2>洛书九宫 · 宫气观照</h2><div class="sub">九宫三态 · 3⁹ = 19683 格局</div></div></div>';
 
     // 来源与状态提示
     var hasResult = !!store.result;
@@ -742,18 +786,18 @@ function miniGua(tag, name, full, lines, dongSet) {
     if (!store.san) store.san = [0, 0, 0, 0, 0, 0, 0, 0, 0]; // 默认全零中心态
     if (hasResult) {
       h += '<div class="card sy-src"><div class="sy-src-t">起卦联动 · ' + esc(store.castNote) + '</div>' +
-        '<div class="sy-src-s">由本卦「' + esc(store.result.ben.full) + '」自动映射九维；可点按各维微调观照。</div></div>';
+        '<div class="sy-src-s">由本卦「' + esc(store.result.ben.full) + '」按洛书九宫映射宫气；可点按各宫微调观照。</div></div>';
     } else {
-      h += '<div class="card sy-src"><div class="sy-src-t">尚未起卦 · 全零中心态</div>' +
-        '<div class="sy-src-s">当前显示 3⁹ 状态空间中心（第 9841 号，转化中）。可点按各维微调观照，或先起卦获得联动映射。</div></div>';
+      h += '<div class="card sy-src"><div class="sy-src-t">尚未起卦 · 全枢中心态</div>' +
+        '<div class="sy-src-s">当前显示 3⁹ 格局中心（第 9841 号，宫气俱枢、转化中）。可点按各宫微调观照，或先起卦获得联动映射。</div></div>';
     }
 
-    // 九宫格
-    h += '<div class="pai-section"><h3>九维三态 <span class="en">NINE DIMENSIONS · TAP TO CYCLE -1→0→+1</span></h3>';
-    h += '<div class="sy-grid">';
-    for (var i = 0; i < 9; i += 1) h += sanCellHtml(store.san, i);
+    // 九宫盘（洛书飞星排布：巽四离九坤二 / 震三中五兑七 / 艮八坎一乾六）
+    h += '<div class="pai-section"><h3>九宫盘 <span class="en">LO SHU PALACE · TAP TO CYCLE -1→0→+1</span></h3>';
+    h += '<div class="sy-palace">';
+    for (var pi = 0; pi < 9; pi += 1) h += sanPalaceCell(store.san, pi);
     h += '</div>';
-    h += '<div class="sy-grid-tip">点按任意维度可在 -1（止）→ 0（转）→ +1（进）间循环，编号与解读实时更新。</div>';
+    h += '<div class="sy-palace-tip">九宫飞星之序：坎一、坤二、震三、巽四、中五、乾六、兑七、艮八、离九。点按任意宫可在 -1（气敛·止）→ 0（气枢·转）→ +1（气旺·行）间循环，编号与解读实时更新。</div>';
     h += '</div>';
 
     // 标识卡
@@ -761,23 +805,23 @@ function miniGua(tag, name, full, lines, dongSet) {
     var off = sanOffset(store.san);
     var tern = sanTern(store.san);
     var cDist = Math.abs(idx - 9841);
-    h += '<div class="pai-section"><h3>状态标识 <span class="en">STATE ID</span></h3>';
+    h += '<div class="pai-section"><h3>格局标识 <span class="en">STATE ID</span></h3>';
     h += '<div class="card sy-id">' +
       '<div class="sy-id-row"><span class="sy-id-label">三进制码</span><span class="sy-id-code">' + tern + '</span></div>' +
-      '<div class="sy-id-row"><span class="sy-id-label">状态编号</span><span class="sy-id-num">' + idx + ' <em>/ 19682</em></span></div>' +
-      '<div class="sy-id-row"><span class="sy-id-label">认知偏移</span><span class="sy-id-num">' + off + ' <em>/ 9</em></span></div>' +
+      '<div class="sy-id-row"><span class="sy-id-label">格局编号</span><span class="sy-id-num">' + idx + ' <em>/ 19682</em></span></div>' +
+      '<div class="sy-id-row"><span class="sy-id-label">宫气凝聚</span><span class="sy-id-num">' + off + ' <em>/ 9</em></span></div>' +
       '<div class="sy-id-row"><span class="sy-id-label">距中心</span><span class="sy-id-num">' + cDist + ' <em>（中心 9841）</em></span></div>' +
       '</div></div>';
 
-    // 三元解读
-    h += '<div class="pai-section"><h3>三元解读 <span class="en">THREE TRIPLES</span></h3>';
+    // 三元解读：体 / 用 / 变
+    h += '<div class="pai-section"><h3>三元解读 <span class="en">TI · YONG · BIAN</span></h3>';
     h += '<div class="sy-triples">';
     for (var g = 0; g < SAN_GROUPS.length; g += 1) {
       var grp = SAN_GROUPS[g];
       var dims = grp.dims;
       var gv = dims.map(function (d) { return store.san[d]; });
       var gSum = gv.reduce(function (a, b) { return a + b; }, 0);
-      var gTag = gSum > 0 ? '偏进' : gSum < 0 ? '偏止' : '居中';
+      var gTag = gSum > 0 ? '偏旺' : gSum < 0 ? '偏敛' : '居中';
       h += '<div class="card sy-trip">' +
         '<div class="sy-trip-head"><div class="sy-trip-name">' + grp.name + '</div><div class="sy-trip-en">' + grp.en + '</div>' +
         '<span class="badge ' + (gSum > 0 ? 'b-red' : gSum < 0 ? 'b-green' : 'b-gold') + '">' + gTag + '</span></div>' +
@@ -785,58 +829,67 @@ function miniGua(tag, name, full, lines, dongSet) {
         '<div class="sy-trip-dims">' + dims.map(function (d, j) {
           var dm = SAN_DIMS[d];
           var dv = store.san[d];
-          return '<div class="sy-td"><span class="sy-td-n">' + dm.name + '·' + dm.key + '</span>' +
+          return '<div class="sy-td"><span class="sy-td-n">' + dm.name + '·' + dm.xing + '</span>' +
             '<span class="sy-td-v ' + (dv === 1 ? 'vp' : dv === -1 ? 'vn' : 'vz') + '">' + dv + '</span></div>';
         }).join('') + '</div>' +
         '</div>';
     }
     h += '</div></div>';
 
-    // 27 卦模式
+    // 27 格局
     var mode = sanMode27(store.san);
     var mKey = sanModeKey(mode);
     var mInfo = SAN_MODE_27[mKey] || { name: '衡 · 衡 · 中', idea: '三组主分量皆归中性。' };
-    h += '<div class="pai-section"><h3>27 卦模式 <span class="en">COARSE-GRAIN PROJECTION</span></h3>';
+    var mNames = [[1, '承'], [0, '衡'], [-1, '敛']];
+    var uNames = [[1, '显'], [0, '衡'], [-1, '晦']];
+    var bNames = [[1, '进'], [0, '守'], [-1, '归']];
+    function nm(arr, v) { for (var k = 0; k < arr.length; k += 1) { if (arr[k][0] === v) return arr[k][1]; } return '·'; }
+    h += '<div class="pai-section"><h3>27 格局 <span class="en">COARSE-GRAIN PROJECTION</span></h3>';
     h += '<div class="card sy-mode">' +
       '<div class="sy-mode-top"><div class="sy-mode-name">' + esc(mInfo.name) + '</div>' +
       '<div class="sy-mode-code">体' + mode[0] + ' · 用' + mode[1] + ' · 变' + mode[2] + '</div></div>' +
-      '<div class="sy-mode-bar"><span class="sy-mb-item' + (mode[0] === 1 ? ' on p' : mode[0] === -1 ? ' on n' : '') + '">体 ' + (mode[0] === 1 ? '承' : mode[0] === -1 ? '敛' : '衡') + '</span><span class="sy-mb-arrow">→</span>' +
-      '<span class="sy-mb-item' + (mode[1] === 1 ? ' on p' : mode[1] === -1 ? ' on n' : '') + '">用 ' + (mode[1] === 1 ? '进' : mode[1] === -1 ? '审' : '衡') + '</span><span class="sy-mb-arrow">→</span>' +
-      '<span class="sy-mb-item' + (mode[2] === 1 ? ' on p' : mode[2] === -1 ? ' on n' : '') + '">变 ' + (mode[2] === 1 ? '进' : mode[2] === -1 ? '归' : '守') + '</span></div>' +
+      '<div class="sy-mode-bar">' +
+      '<span class="sy-mb-item' + (mode[0] === 1 ? ' on p' : mode[0] === -1 ? ' on n' : '') + '">体 ' + nm(mNames, mode[0]) + '</span><span class="sy-mb-arrow">→</span>' +
+      '<span class="sy-mb-item' + (mode[1] === 1 ? ' on p' : mode[1] === -1 ? ' on n' : '') + '">用 ' + nm(uNames, mode[1]) + '</span><span class="sy-mb-arrow">→</span>' +
+      '<span class="sy-mb-item' + (mode[2] === 1 ? ' on p' : mode[2] === -1 ? ' on n' : '') + '">变 ' + nm(bNames, mode[2]) + '</span>' +
+      '</div>' +
       '<div class="sy-mode-idea">' + esc(mInfo.idea) + '</div>' +
-      '<div class="sy-mode-note">体（领域负荷）· 用（行动方向）· 变（进展阶段）——由 19683 细粒度状态降维投影为 27 种粗粒度模式，用于快速自识「我正以什么模式存在」。</div>' +
+      '<div class="sy-mode-note">体（坎坤震，根基我势）· 用（巽中乾，施用外事）· 变（兑艮离，时变机枢）——由 19683 细粒度宫气格局降维投影为 27 种粗粒度格局，用于快速识「此刻以何格局立身行事」。</div>' +
       '</div></div>';
 
-    // 四象相位
-    var phIdx = sanPhaseIdx(store.san);
-    var ph = SAN_PHASES[phIdx];
-    h += '<div class="pai-section"><h3>四象相位 <span class="en">LIMIT CYCLE PHASE</span></h3>';
+    // 伏羲四象相位
+    var phIdx = sanPhaseFromCast(store.result);
+    var ph = phIdx >= 0 ? SAN_PHASES[phIdx] : null;
+    var phName = ph ? ph.name : '未定';
+    var phEn = ph ? ph.en : 'PENDING';
+    var phAct = ph ? ph.act : '待起卦';
+    var phDesc = ph ? ph.desc : sanPhDesc(-1);
+    h += '<div class="pai-section"><h3>四象相位 <span class="en">FUXI FOUR SYMBOLS</span></h3>';
     h += '<div class="card sy-phase">' +
-      '<div class="sy-ph-top"><div class="sy-ph-name">' + ph.name + '</div><div class="sy-ph-en">' + ph.en + '</div>' +
-      '<span class="badge b-red">' + ph.act + '</span></div>' +
-      '<div class="sy-ph-desc">' + esc(ph.desc) + '</div>' +
+      '<div class="sy-ph-top"><div class="sy-ph-name">' + phName + '</div><div class="sy-ph-en">' + phEn + '</div>' +
+      '<span class="badge b-red">' + phAct + '</span></div>' +
+      '<div class="sy-ph-desc">' + esc(phDesc) + '</div>' +
       '<div class="sy-ph-cycle">' +
       SAN_PHASES.map(function (p, i) {
-        var short = p.name.split(' ')[0];
-        if (p.name.indexOf('转化') === 0) short = p.name.split(' ')[0] + ' ' + p.name.split(' ')[1];
-        return '<div class="sy-phc' + (i === phIdx ? ' on' : '') + '"><span>' + (i + 1) + '</span>' + short + '</div>';
-      }).join('<div class="sy-phc-arr">→</div>') +
+        var short = p.name;
+        return '<div class="sy-phc' + (phIdx === i ? ' on' : '') + '"><span>' + ['太阳', '少阴', '少阳', '太阴'][i][0] + '</span>' + short + '</div>';
+      }).join('<div class="sy-phc-arr">·</div>') +
       '</div>' +
-      '<div class="sy-ph-note">四象极限环是 19683 空间中的唯一吸引子：密（积聚）→ 转化 A → 疏（衰减）→ 转化 B（重聚）周而复始；「认知即执行」——积聚即信息流入，转化即内在重组，衰减即输出释放，重聚即反思学习。</div>' +
+      '<div class="sy-ph-note">四象由体用两卦阴阳相合：阳卦（乾震坎艮）、阴卦（坤巽离兑）。太阳外放、少阴外显内藏、少阳内蓄外发、太阴内敛守静——示此时进退宜忌。</div>' +
       '</div></div>';
 
     // 白话综述
     h += '<div class="pai-section"><h3>白话综述 <span class="en">PLAIN SUMMARY</span></h3>';
-    h += '<div class="card sy-sum">' + esc(sanSummary(store.san, mode, ph)) + '</div></div>';
+    h += '<div class="card sy-sum">' + esc(sanSummary(store.san, mode, phIdx)) + '</div></div>';
 
-    // 与本卦合参·三段断语（完整版）
+    // 与本卦合参·断语（完整版：体用基准 × 27格局 × 四象时机 × 偏移把握 × 镜像提示）
     if (hasResult) {
       var duan = sanReadingFull(store.result, mode, mKey, phIdx, off);
       if (duan) {
         h += '<div class="pai-section"><h3>与本卦合参 <span class="en">CAST &amp; STATE</span></h3>';
         h += '<div class="card sy-duan"><div class="sy-duan-t">观卦断语 · 骨神合参</div>' +
           '<div class="sy-duan-b">' + esc(duan) + '</div>' +
-          '<div class="sy-duan-n">体用为骨定吉凶，九维为神示时机；所陈供文化研习与自我观照参考。</div></div></div>';
+          '<div class="sy-duan-n">体用为骨定吉凶，九宫为神示时机，四象示进退，镜像示往复；所陈供文化研习与自我观照参考。</div></div></div>';
       }
     }
 
@@ -855,20 +908,20 @@ function miniGua(tag, name, full, lines, dongSet) {
     var mode = sanMode27(v);
     var mKey = sanModeKey(mode);
     var mInfo = SAN_MODE_27[mKey] || { name: '衡 · 衡 · 中' };
-    var phIdx = sanPhaseIdx(v);
-    var ph = SAN_PHASES[phIdx];
+    var phIdx = sanPhaseFromCast(r);
+    var ph = phIdx >= 0 ? SAN_PHASES[phIdx] : null;
     var duan = sanReadingShort(r, mode, mKey, phIdx);
     var h = '';
-    h += '<div class="pai-section"><h3>三元九维 · 认知观照 <span class="en">COGNITIVE STATE</span></h3>';
+    h += '<div class="pai-section"><h3>洛书九宫 · 宫气观照 <span class="en">LO SHU STATE</span></h3>';
     h += '<div class="card sy-mini">' +
       '<div class="sy-mini-top"><div class="sy-mini-code">' + tern + '</div><div class="sy-mini-info">' +
-      '<span class="sy-mini-num">第 ' + idx + ' 号</span><span class="badge b-red">' + ph.name + '</span></div></div>' +
-      '<div class="sy-mini-row">模式：<b>' + esc(mInfo.name) + '</b>　（体' + mode[0] + '·用' + mode[1] + '·变' + mode[2] + '）</div>' +
-      '<div class="sy-mini-row">相位：' + ph.act + ' —— ' + esc(ph.desc.slice(0, 42)) + '…</div>';
+      '<span class="sy-mini-num">第 ' + idx + ' 号</span><span class="badge b-red">' + (ph ? ph.name : '相位未定') + '</span></div></div>' +
+      '<div class="sy-mini-row">格局：<b>' + esc(mInfo.name) + '</b>　（体' + mode[0] + '·用' + mode[1] + '·变' + mode[2] + '）</div>' +
+      '<div class="sy-mini-row">相位：' + (ph ? ph.act : sanPhDesc(-1)) + (ph ? ' —— ' + esc(ph.desc.slice(0, 40)) + '…' : '') + '</div>';
     if (duan) {
       h += '<div class="sy-mini-duan">' + esc(duan) + '</div>';
     }
-    h += '<button class="btn btn-mini" data-action="tab" data-tab="san" style="margin-top:12px;width:100%">进入完整三元九维观照</button>' +
+    h += '<button class="btn btn-mini" data-action="tab" data-tab="san" style="margin-top:12px;width:100%">进入完整宫气观照</button>' +
       '</div></div>';
     return h;
   }

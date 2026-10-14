@@ -156,6 +156,24 @@
   .hero .hero-cap .t1{font-family:var(--kai);font-size:30px;font-weight:700;letter-spacing:8px;text-shadow:0 2px 12px rgba(0,0,0,.5);}
   .hero .hero-cap .t2{font-size:11px;letter-spacing:5px;margin-top:4px;opacity:.9;text-shadow:0 1px 6px rgba(0,0,0,.6);}
 
+  /* 水墨源流序言（首页） */
+  .yb-slip{
+    margin:0 20px 18px;padding:18px 18px 16px;position:relative;
+    background:linear-gradient(165deg,rgba(255,255,255,.55),rgba(168,134,58,.07));
+    border:1px solid var(--line);border-radius:14px;
+  }
+  .yb-slip::before{
+    content:"";position:absolute;left:12px;top:12px;width:5px;height:calc(100% - 24px);
+    background:linear-gradient(180deg,var(--cinnabar),rgba(166,58,43,.15));border-radius:3px;opacity:.55;
+  }
+  .yb-title{font-family:var(--kai);font-size:16px;font-weight:700;letter-spacing:3px;color:var(--ink);margin-bottom:12px;text-align:center;}
+  .yb-lines{display:flex;flex-direction:column;gap:9px;}
+  .yb-line{background:rgba(255,255,255,.42);border:1px solid rgba(47,42,36,.08);border-radius:10px;padding:9px 12px;position:relative;}
+  .yb-line .yb-t{font-family:var(--kai);font-size:14px;font-weight:700;letter-spacing:2px;color:var(--ink);}
+  .yb-line .yb-d{font-size:11.5px;color:var(--ink-soft);line-height:1.8;margin-top:3px;}
+  .yb-flow{text-align:center;font-size:13px;color:var(--gold);line-height:1;}
+  .yb-sig{text-align:right;font-size:11px;color:var(--ink-soft);letter-spacing:2px;font-family:var(--kai);margin-top:12px;}
+
   .method-tabs{display:flex;gap:10px;margin-bottom:14px;}
   .method-tab{
     flex:1;text-align:center;padding:11px 0;border-radius:12px;
@@ -358,16 +376,25 @@
   .about-card .ac-list li::before{content:"·";position:absolute;left:0;color:var(--cinnabar);font-weight:700;}
   .ver-line{text-align:center;font-size:11px;color:var(--ink-soft);letter-spacing:1px;padding:8px 0 4px;}
 
-  /* ========== 三元九维 · 19683 ========== */
+  /* ========== 三元九维 · 洛书九宫 19683 ========== */
   .sy-src{padding:14px 16px;margin-bottom:14px;background:linear-gradient(150deg,rgba(47,42,36,.04),rgba(168,134,58,.08));}
   .sy-src-t{font-family:var(--kai);font-size:15px;font-weight:700;letter-spacing:2px;color:var(--ink);margin-bottom:6px;}
   .sy-src-s{font-size:12px;line-height:1.9;color:var(--ink-soft);}
 
-  .sy-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;}
+  /* 九宫盘：洛书飞星三行三列 */
+  .sy-palace{
+    display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+    gap:9px;padding:10px;border-radius:16px;
+    background:
+      radial-gradient(circle at center, rgba(168,134,58,.08), transparent 70%),
+      linear-gradient(160deg, rgba(47,42,36,.05), rgba(255,255,255,.15));
+    border:1px solid var(--line);
+  }
   .sy-cell{
-    border:1px solid var(--line);border-radius:13px;padding:11px 8px 9px;
-    background:rgba(255,255,255,.45);cursor:pointer;user-select:none;
+    border:1px solid var(--line);border-radius:13px;padding:10px 7px 8px;
+    background:rgba(255,255,255,.5);cursor:pointer;user-select:none;
     text-align:center;transition:transform .12s,box-shadow .12s;position:relative;overflow:hidden;
+    box-shadow:0 2px 8px rgba(47,42,36,.05);
   }
   .sy-cell:active{transform:scale(.96);}
   .sy-cell::after{
@@ -377,18 +404,19 @@
   .sy-cell.sy-vp::after{background:var(--cinnabar);}
   .sy-cell.sy-vn::after{background:var(--qing);}
   .sy-cell.sy-vz::after{background:var(--gold);}
-  .sy-dn{font-size:11.5px;color:var(--ink);letter-spacing:1px;font-family:var(--kai);font-weight:700;}
-  .sy-dn b{font-size:15px;}
+  .sy-dn{font-size:11px;color:var(--ink);letter-spacing:1px;font-family:var(--kai);font-weight:700;line-height:1.5;}
+  .sy-dn b{font-size:14px;}
   .sy-dv{
-    font-family:var(--kai);font-size:30px;font-weight:700;line-height:1.2;margin:5px 0 1px;
+    font-family:var(--kai);font-size:26px;font-weight:700;line-height:1.2;margin:4px 0 1px;
   }
   .sy-vp .sy-dv{color:var(--cinnabar);}
   .sy-vn .sy-dv{color:var(--qing);}
   .sy-vz .sy-dv{color:#8a6c28;}
-  .sy-dk{font-size:10px;letter-spacing:3px;color:var(--ink-soft);margin-bottom:4px;}
-  .sy-ds{font-size:10.5px;color:var(--ink-soft);letter-spacing:.5px;margin-bottom:3px;}
-  .sy-dt{font-size:9.5px;color:var(--ink-soft);opacity:.8;line-height:1.5;}
-  .sy-grid-tip{margin-top:10px;font-size:11px;color:var(--ink-soft);letter-spacing:.5px;line-height:1.8;text-align:center;}
+  .sy-dk{font-size:9.5px;letter-spacing:3px;color:var(--ink-soft);margin-bottom:3px;}
+  .sy-ds{font-size:9.5px;color:var(--ink-soft);letter-spacing:.5px;margin-bottom:3px;line-height:1.4;}
+  .sy-dh{font-size:9px;color:var(--gold);letter-spacing:.5px;margin-bottom:2px;font-family:var(--kai);}
+  .sy-dt{font-size:9px;color:var(--ink-soft);opacity:.8;line-height:1.5;}
+  .sy-palace-tip{margin-top:10px;font-size:11px;color:var(--ink-soft);letter-spacing:.5px;line-height:1.8;text-align:center;}
 
   .sy-id{padding:14px 16px;}
   .sy-id-row{display:flex;align-items:baseline;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--line);}
