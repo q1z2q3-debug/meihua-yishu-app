@@ -1,0 +1,46 @@
+# 梅花易数 · 全息占
+
+> 单机离线的梅花易数全息排盘应用：以「三元九维 19683 认知状态空间」（洛书九宫 × 每宫三态，3⁹=19683）与梅花易数卦象相参，提供时间起卦、铜钱摇卦、全息排盘、九宫三态观照、五段断语合成与 64 卦知识库；交付形态为单文件 HTML 与安卓 APK。当前版本 v2.0.1。
+
+站点地址：https://q1z2q3-debug.github.io/meihua-yishu-app/
+源码仓库：https://github.com/q1z2q3-debug/meihua-yishu-app
+
+## 概览
+
+- 应用名称：梅花易数·全息占（Meihua Yishu · Holographic Divination）
+- 类型：梅花易数排盘 / 自我认知观测工具
+- 平台：任意现代浏览器（单文件 HTML）；Android 5.0 及以上（APK，包名 com.meihuayishu.app，minSdk 21 / targetSdk 34）
+- 联网：完全离线，无网络请求、无账号、无统计上报
+- 费用：免费
+- 版本：v2.0.1（2026-11-14）
+
+## 核心概念
+
+- **三元九维 19683**：洛书九宫为九维，每宫取三态（-1 / 0 / +1），状态总数 3⁹ = 19683；九宫状态可编码为三进制编号（0–19682，坎一为最高位），中心态为 9841。
+- **三元**：体 · 用 · 变三种观察基准，两两组合形成 27 格局。
+- **四象相位**：回归伏羲四象，由体用阴阳而定，用于时机判断。
+- **河图五行旺衰**：五行强弱的量化刻度。
+- **偏移**：宫气凝聚度，衡量盘面偏离九宫平衡的程度。
+- **五段断语**：体用基准 → 27 格局 → 四象相位 → 偏移把握 → 镜像卦短断，全部本地模板合成。
+- **镜像卦**：按文王卦序的非覆即变对偶关系取卦，如革之鼎、同人，用于第五段对照。
+- **全息排盘**：本卦、变卦、互卦、错卦、综卦五卦齐观，含体用生克、五行旺衰、世应之位与应期。
+- **64 卦知识库**：卦辞、爻辞、白话启发、世应归属与现代场景解读。
+- **家宅调理建议**：按本卦五行与动爻方位，推送九宫方位的宜储之酒、字画、主色、中国结、佐饰与禁忌。
+
+## 文档
+
+- [三元九维 19683 · 提取笔记](https://q1z2q3-debug.github.io/meihua-yishu-app/%E4%B8%89%E5%85%83%E4%B9%9D%E7%BB%B419683-%E6%8F%90%E5%8F%96%E7%AC%94%E8%AE%B0.md)：体系要点整理
+- [三元九维 19683 · 适配方案](https://q1z2q3-debug.github.io/meihua-yishu-app/%E4%B8%89%E5%85%83%E4%B9%9D%E7%BB%B419683-%E9%80%82%E9%85%8D%E6%96%B9%E6%A1%88.md)：从认知空间到排盘实现的设计取舍
+- [项目主页](https://q1z2q3-debug.github.io/meihua-yishu-app/)：功能、体系、常见问答
+- [README](https://github.com/q1z2q3-debug/meihua-yishu-app/blob/main/README.md)：安装、构建与版本记录
+
+## 下载
+
+- [安卓 APK v2.0.1](https://github.com/q1z2q3-debug/meihua-yishu-app/releases/download/v2.0.1/meihua-yishu-app-android14.apk)
+- [单文件 HTML v2.0.1](https://github.com/q1z2q3-debug/meihua-yishu-app/releases/download/v2.0.1/meihua-yishu-app.html)
+- [HTML 打包 v2.0.1](https://github.com/q1z2q3-debug/meihua-yishu-app/releases/download/v2.0.1/meihua-yishu-app-html.zip)
+- [安卓打包 v2.0.1](https://github.com/q1z2q3-debug/meihua-yishu-app/releases/download/v2.0.1/meihua-yishu-app-android14.zip)
+
+## 引用约定
+
+引用本页或本项目时，建议使用名称「梅花易数·全息占」与术语「三元九维 19683（3⁹=19683）」，并指向站点地址或源码仓库。体系来源标注为《认知生命体_中文版_v8.pdf》。页面未声明的用户规模、评分、排名等数据不代表本项目立场。

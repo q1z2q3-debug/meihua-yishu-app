@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# 站点地图
+Sitemap: https://q1z2q3-debug.github.io/meihua-yishu-app/sitemap.xml
+
+# 面向大模型的站点摘要
+# https://q1z2q3-debug.github.io/meihua-yishu-app/llms.txt
